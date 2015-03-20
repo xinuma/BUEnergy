@@ -1,4 +1,23 @@
-#This file is the same as the BUEnergyFunctions.R file, but the implementations are more efficient
+# Functions created to extract relevant information from the BUEnergy database hosted by Daniel Gastler (dgastler@bu.edu)
+# Functions reated by Caroline Lee (leec94@bu.edu) and Xinu Ma (xinuma@bu.edu)
+#
+# These functions use the RODBC package which is for R version 3.1.2 or above. For Mac computers, it might be more troublesome 
+# The package ggplot2 is also used to graph information 
+#
+# Also make sure that an ODBC connection to the database is established using a MySQL ODBC Unicode Driver 
+# (can be downloaded at this website: http://dev.mysql.com/downloads/connector/odbc/)
+#
+# To set up a Data Source in Windows systems 
+# Navigate to Administrative Tools > OBDC Data Sources (64-bit) 
+# Under System DSN, click Add... and select MySQL OBDC X.X Unicode Driver
+# 
+# enter the following parameters...
+# Data Source Name: BUEnergy
+# TCP/IP Server: volta.bu.edu     Port: 3306
+# user: energy
+# Password: sjuSH64xPq9qBxQkEvve
+# 
+# Click the Test button to make sure the connection is successful, then click OK
 
 
 #given month, day, year, returns the correct format for sql queries like year-month-day
@@ -34,6 +53,7 @@ listTemp <- function(startdate, enddate) {
   return (templist[[1]])
 }
 
+#returns a vector of booleans for whether or now there is class during each timestamp
 listClassDay <- function(startdate, enddate) {
   #connect to BUEnergy database
   library(RODBC)
@@ -222,7 +242,7 @@ plotHDDCDD <- function(startdate, enddate, basetemp) {
   df <- data.frame(time = datelist, 
                    HDD = HDDlist,
                    CDD = CDDlist)
-                  
+  
   #loading the package to plot the graph 
   library(ggplot2)
   
@@ -276,6 +296,5 @@ building_ID <- 12
 
 #lonely info function
 print(showBuildingInfo())  
-
 
 
