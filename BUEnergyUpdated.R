@@ -206,6 +206,7 @@ showBuildingInfo <- function() {
 }
 
 plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
+plotElectricityHDD <- function(startdate, enddate, basetemp) {
   #plots time in x axis, electricity usage in Y axis for each day between start and end 
   #HDD in another line for each day between start and end 
   
@@ -214,44 +215,95 @@ plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
   #CDDlist<-listCDDdate(startdate, enddate, 65)
   
   Eleclist<- listElectricity(startdate, enddate, building_ID)
+  Eleclist<- listElectricity(startdate, enddate, 1)
   
   plot<-cbind(HDDlist,Eleclist)
   plot(plot)
 }
 
-plotElectricityCDD <- function(startdate, enddate, basetemp, building_ID) {
+plotElectricityCDD <- function(startdate, enddate, basetemp,building_ID) {
   #plots time in x axis, electricity usage in Y axis for each day between start and end 
   #HDD in another line for each day between start and end 
   
   #print(daylist)
   CDDlist<-listCDD(startdate, enddate, basetemp)
   #CDDlist<-listCDDdate(startdate, enddate, 65)
-  
+  datelist<-seq(as.Date(startdate), as.Date(enddate), "1 day") 
   Eleclist<- listElectricity(startdate, enddate, building_ID)
+  df<-data.frame(CDD=CDDlist,Elec=Eleclist,time=datelist)
+ # plot<-ggplot(data=df, aes(x=CDD, y=Elec,colour=as.integer(time)))+geom_point()+scale_colour_gradient(limits=as.integer(as.Date(c(startdate,enddate))),
+  #                                                                                                                low="white", high="blue") +geom_smooth(aes(x=CDD, y=Elec),data=df,method="lm")
+  plot<-ggplot(df,aes(x=CDD,y=Elec,colour=as.integer(time))) + geom_point(alpha = 0.6) +
+    scale_colour_gradientn(colours=c('red','green','blue'),labels=time)
+  return(plot)
+
+  #plot(df) 
+  #fit<-lm(Elec~CDD,data=df)
+  #abline(fit)
+  #print(summary(fit))
+}
+
+plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
+  #plots time in x axis, electricity usage in Y axis for each day between start and end 
+  #HDD in another line for each day between start and end 
   
-  plot<-cbind(CDDlist,Eleclist)
-  plot(plot)
+  #print(daylist)
+  HDDlist<-listHDD(startdate, enddate, basetemp)
+  #CDDlist<-listCDDdate(startdate, enddate, 65)
+  datelist<-seq(as.Date(startdate), as.Date(enddate), "1 day") 
+  Eleclist<- listElectricity(startdate, enddate, building_ID)
+  classlist<-listClassDay (startdate, enddate)
+  df<-data.frame(HDD=HDDlist,Elec=Eleclist,time=datelist)
+  # plot<-ggplot(data=df, aes(x=CDD, y=Elec,colour=as.integer(time)))+geom_point()+scale_colour_gradient(limits=as.integer(as.Date(c(startdate,enddate))),
+  #                                                                                                                low="white", high="blue") +geom_smooth(aes(x=CDD, y=Elec),data=df,method="lm")
+  plot<-ggplot(df,aes(x=HDD,y=Elec,colour=as.integer(time))) + geom_point(alpha = 0.6,shape=factor(classlist)) +
+    scale_colour_gradientn(colours=c('red','green','blue'),labels=time)
+  return(plot)
+  
+  #plot(df) 
+  #fit<-lm(Elec~CDD,data=df)
+  #abline(fit)
+  #print(summary(fit))
 }
 
 #not working
-plotHDDCDD <- function(startdate, enddate, basetemp) {
+plotHDDCDD <- function(startdate, enddate, basetemp, building_ID) {
   HDDlist<-listHDD(startdate, enddate, basetemp)
-  CDDlist<-listCDDdate(startdate, enddate, basetemp)
+  CDDlist<-listCDD(startdate, enddate, basetemp)
   datelist<-seq(as.Date(startdate), as.Date(enddate), "1 day") 
-  
-  df <- data.frame(time = datelist, 
-                   HDD = HDDlist,
-                   CDD = CDDlist)
-  
-  #loading the package to plot the graph 
-  library(ggplot2)
-  
-  ggplot(df, aes(x=datelist, y=HDDlist, group=1))+ geom_line() + geom_point()
-         
+  Eleclist<- listElectricity(startdate, enddate, building_ID)
+   ts.H<-ts(HDDlist)
+   ts.C<-ts(CDDlist)
+   ts.E<-ts(Eleclist)
+   par(mfrow=c(3,1))
+   plot(ts.H,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+   plot(ts.C,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+   plot(ts.E,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+  df <- data.frame(time = datelist, CDD = CDDlist, HDD=HDDlist,Elec=Eleclist)
+  #plot<-ggplot() + geom_line(data=df, aes(x=time, y=Elec), color='green')# + geom_line(data=df, aes(x=time, y=HDD), color='red')# + geom_line(data=df, aes(x=time, y=Elec), color='black')
+  # plot<-ggplot( data = df, aes( time, HDD )) + geom_line() 
+  #return(plot) 
+  CDDElec<-subset(df,CDD>0)
+  #plot(CDDElec$CDD,CDDElec$Elec)
+  fit<-lm(CDDElec$Elec~CDDElec$CDD)
+  #abline(fit)
+  print(summary(fit))
+  sub<-subset(df,CDD==0)
+  print(mean(sub$Elec,na.rm=T))
 }
+plotHDDCDD(startdate, enddate, basetemp,building_ID)
 
-
-
+listClassDay <- function(startdate, enddate) {
+  #connect to BUEnergy database
+  library(RODBC)
+  connect <- odbcConnect(dsn="BUEnergy", uid="energy", pwd = "sjuSH64xPq9qBxQkEvve")
+  
+  query <- paste("select if(class='C' || class='SC1' || class='SC' || class='SC2',if(weekdays = 'Sa'|| weekdays = 'Su',FALSE,TRUE),FALSE)  from BUEnergy.calendar where time BETWEEN '", startdate," 00:00:00' and '", enddate," 23:59:59' group by date(time);", sep="")
+  HDD <- sqlQuery(connect, query)
+  
+  odbcCloseAll()
+  return (HDD[[1]])
+}
 
 #--------testing functions 
 month <- 1
@@ -263,8 +315,8 @@ endday <- 21
 endyear <- 2014
 enddate <- makeDate(endmonth, endday, endyear)
 
-basetemp <- 62
-building_ID <- 12
+basetemp <- 65
+building_ID <- 8
 
 #single date functions 
 # print(paste("Temperature for ",startdate,": ", singleTemp(startdate), sep=""))
@@ -290,11 +342,16 @@ building_ID <- 12
 # print(paste("1 if a class day, 0 if not from ",startdate," to ",enddate,": ", sep=""))
 # print(listClassDay(startdate, enddate))
 #plot functions
-# plotElectricityHDD(startdate, enddate, basetemp, building_ID)
-# plotElectricityCDD(startdate, enddate, basetemp, building_ID)
+# plotElectricityHDD(startdate, enddate, basetemp)
+# plotElectricityCDD(startdate, enddate, basetemp)
 #plotHDDCDD(startdate, enddate, basetemp)
 
 #lonely info function
-print(showBuildingInfo())  
+#print(showBuildingInfo())  
+
+
+plotElectricityHDD (startdate, enddate, basetemp, building_ID)
+#plotElectricityCDD (startdate, enddate, basetemp, building_ID)
+
 
 
