@@ -266,7 +266,6 @@ plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
   #print(summary(fit))
 }
 
-#not working
 plotHDDCDD <- function(startdate, enddate, basetemp, building_ID) {
   HDDlist<-listHDD(startdate, enddate, basetemp)
   CDDlist<-listCDD(startdate, enddate, basetemp)
