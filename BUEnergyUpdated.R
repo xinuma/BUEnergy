@@ -247,7 +247,7 @@ plotHDDCDD <- function(startdate, enddate, basetemp) {
   library(ggplot2)
   
   ggplot(df, aes(x=datelist, y=HDDlist, group=1))+ geom_line() + geom_point()
-         
+  
 }
 
 
