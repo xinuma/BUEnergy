@@ -206,7 +206,6 @@ showBuildingInfo <- function() {
 }
 
 plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
-plotElectricityHDD <- function(startdate, enddate, basetemp) {
   #plots time in x axis, electricity usage in Y axis for each day between start and end 
   #HDD in another line for each day between start and end 
   
@@ -215,7 +214,6 @@ plotElectricityHDD <- function(startdate, enddate, basetemp) {
   #CDDlist<-listCDDdate(startdate, enddate, 65)
   
   Eleclist<- listElectricity(startdate, enddate, building_ID)
-  Eleclist<- listElectricity(startdate, enddate, 1)
   
   plot<-cbind(HDDlist,Eleclist)
   plot(plot)
@@ -266,15 +264,68 @@ plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
   #print(summary(fit))
 }
 
+#TEMPORARY TO FIND BEST CDD FOR INTERCEPT 
+plotHDDCDDIntercept <- function(startdate, enddate) {
+  
+  #loop through buildings 
+  #loop through temps 30 to 70
+  
+  cddintercepts <- list() 
+  for (i in 1:15) {
+    building_ID <- i
+    diff <- 10000
+    elecint <- 0
+    elecmean <- 0
+    base <- 0 
+    
+    for (j in 45:70) {
+      basetemp <- j
+      HDDlist<-listHDD(startdate, enddate, basetemp)
+      CDDlist<-listCDD(startdate, enddate, basetemp)
+      datelist<-seq(as.Date(startdate), as.Date(enddate), "1 day") 
+      Eleclist<- listElectricity(startdate, enddate, building_ID)
+      
+      df <- data.frame(time = datelist, CDD = CDDlist, HDD=HDDlist,Elec=Eleclist)
+      CDDElec<-subset(df,CDD>0)
+      
+      fit<-lm(CDDElec$Elec~CDDElec$CDD)
+      #abline(fit)
+      sub<-subset(df,CDD==0)
+      #cat(sprintf("Mean electricity where CDD is 0: %f \n", mean(sub$Elec,na.rm=T)))
+   
+      absdiff <- abs(coefficients(fit)[1] - mean(sub$Elec,na.rm=T))
+      if (absdiff < diff) {
+        diff <- absdiff
+        elecint <- coefficients(fit)[1]
+        elecmean <- mean(sub$Elec,na.rm=T)
+        base <- j
+      }
+      
+    }
+    
+    name <- paste("Building",i, sep = ' ')
+    tmp <- list(Basetemp = base, difference = diff, ElecIntercept = elecint, ElecMean = elecmean)
+    cddintercepts[[name]] <- tmp
+    
+    print(paste("building ", i, " ", tmp))
+  }
+  print(cddintercepts)
+}
+
 plotHDDCDD <- function(startdate, enddate, basetemp, building_ID) {
   HDDlist<-listHDD(startdate, enddate, basetemp)
   CDDlist<-listCDD(startdate, enddate, basetemp)
   datelist<-seq(as.Date(startdate), as.Date(enddate), "1 day") 
   Eleclist<- listElectricity(startdate, enddate, building_ID)
-   ts.H<-ts(HDDlist)
+  
+  # making lists into timeseries 
+   ts.H<-ts(HDDlist) 
    ts.C<-ts(CDDlist)
    ts.E<-ts(Eleclist)
-   par(mfrow=c(3,1))
+  
+  # making 3 plots in one graph 
+   par(mfrow=c(3,1)) 
+  
    plot(ts.H,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
    plot(ts.C,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
    plot(ts.E,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
@@ -282,15 +333,20 @@ plotHDDCDD <- function(startdate, enddate, basetemp, building_ID) {
   #plot<-ggplot() + geom_line(data=df, aes(x=time, y=Elec), color='green')# + geom_line(data=df, aes(x=time, y=HDD), color='red')# + geom_line(data=df, aes(x=time, y=Elec), color='black')
   # plot<-ggplot( data = df, aes( time, HDD )) + geom_line() 
   #return(plot) 
+  
   CDDElec<-subset(df,CDD>0)
+  
   #plot(CDDElec$CDD,CDDElec$Elec)
   fit<-lm(CDDElec$Elec~CDDElec$CDD)
   #abline(fit)
   print(summary(fit))
+  print(coefficients(fit)[1])
+  
   sub<-subset(df,CDD==0)
-  print(mean(sub$Elec,na.rm=T))
+  cat(sprintf("Mean electricity where CDD is 0: %f \n", mean(sub$Elec,na.rm=T)))
 }
-plotHDDCDD(startdate, enddate, basetemp,building_ID)
+
+
 
 listClassDay <- function(startdate, enddate) {
   #connect to BUEnergy database
@@ -300,13 +356,13 @@ listClassDay <- function(startdate, enddate) {
   query <- paste("select if(class='C' || class='SC1' || class='SC' || class='SC2',if(weekdays = 'Sa'|| weekdays = 'Su',FALSE,TRUE),FALSE)  from BUEnergy.calendar where time BETWEEN '", startdate," 00:00:00' and '", enddate," 23:59:59' group by date(time);", sep="")
   HDD <- sqlQuery(connect, query)
   
-<<<<<<< HEAD
-  ggplot(df, aes(x=datelist, y=HDDlist, group=1))+ geom_line() + geom_point()
+#<<<<<<< HEAD
+  #ggplot(df, aes(x=datelist, y=HDDlist, group=1))+ geom_line() + geom_point()
   
-=======
+#=======
   odbcCloseAll()
   return (HDD[[1]])
->>>>>>> origin/master
+#>>>>>>> origin/master
 }
 
 #--------testing functions 
@@ -320,7 +376,7 @@ endyear <- 2014
 enddate <- makeDate(endmonth, endday, endyear)
 
 basetemp <- 65
-building_ID <- 8
+building_ID <- 12
 
 #single date functions 
 # print(paste("Temperature for ",startdate,": ", singleTemp(startdate), sep=""))
@@ -351,11 +407,13 @@ building_ID <- 8
 #plotHDDCDD(startdate, enddate, basetemp)
 
 #lonely info function
-#print(showBuildingInfo())  
+print(showBuildingInfo())  
 
 
-plotElectricityHDD (startdate, enddate, basetemp, building_ID)
+# plotElectricityHDD (startdate, enddate, basetemp, building_ID)
 #plotElectricityCDD (startdate, enddate, basetemp, building_ID)
 
+# plotHDDCDD(startdate, enddate, basetemp,building_ID)
+# plotHDDCDDIntercept(startdate, enddate)
 
-
+odbcCloseAll()
