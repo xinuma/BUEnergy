@@ -205,6 +205,18 @@ showBuildingInfo <- function() {
   return (buildings)
 }
 
+intToBuilding <- function(building_ID) {
+  #connect to BUEnergy database
+  library(RODBC)
+  connect <- odbcConnect(dsn="BUEnergy", uid="energy", pwd = "sjuSH64xPq9qBxQkEvve")
+  
+  query <- paste("select Building_Name from BUEnergy.building_info where Building_ID = ",building_ID, ";", sep = "")
+  name <- sqlQuery(connect, query)
+  
+  odbcCloseAll()
+  return (name[[1]])
+}
+
 plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
   #plots time in x axis, electricity usage in Y axis for each day between start and end 
   #HDD in another line for each day between start and end 
@@ -264,8 +276,7 @@ plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
   #print(summary(fit))
 }
 
-#TEMPORARY TO FIND BEST CDD FOR INTERCEPT 
-plotHDDCDDIntercept <- function(startdate, enddate) {
+CalculateBaseTemp <- function(startdate, enddate) {
   
   #loop through buildings 
   #loop through temps 30 to 70
@@ -303,13 +314,12 @@ plotHDDCDDIntercept <- function(startdate, enddate) {
       
     }
     
-    name <- paste("Building",i, sep = ' ')
-    tmp <- list(Basetemp = base, difference = diff, ElecIntercept = elecint, ElecMean = elecmean)
-    cddintercepts[[name]] <- tmp
+    #name <- paste("Building",i, sep = ' ')
+    #tmp <- list(Basetemp = base, difference = diff, ElecIntercept = elecint, ElecMean = elecmean)
+    #cddintercepts[[name]] <- tmp
     
-    print(paste("building ", i, " ", tmp))
+    cat(sprintf("building %i\t Basetemp = %f\t   Difference = %f\t    Intercept Electricity = %f\t    Mean Electricity = %f\n", i, base, diff, elecint, elecmean))
   }
-  print(cddintercepts)
 }
 
 plotHDDCDD <- function(startdate, enddate, basetemp, building_ID) {
@@ -397,7 +407,7 @@ building_ID <- 12
 # print(listHDD(startdate, enddate, basetemp))
 # print(paste("CDDs from ",startdate," to ",enddate,": ", sep=""))
 # print(listCDD(startdate, enddate, basetemp))
-# print(paste("Electricities from ",startdate," to ",enddate," for building ",building_ID,": ", sep=""))
+# print(paste("Electricities from ",startdate," to ",end  date," for building ",building_ID,": ", sep=""))
 # print(listElectricity(startdate, enddate, building_ID))
 # print(paste("1 if a class day, 0 if not from ",startdate," to ",enddate,": ", sep=""))
 # print(listClassDay(startdate, enddate))
@@ -406,14 +416,16 @@ building_ID <- 12
 # plotElectricityCDD(startdate, enddate, basetemp)
 #plotHDDCDD(startdate, enddate, basetemp)
 
-#lonely info function
-print(showBuildingInfo())  
-
+#info function
+#print(showBuildingInfo())  
+for (i in 1:15) {
+  cat(paste(intToBuilding(i),  "\n"))
+}
 
 # plotElectricityHDD (startdate, enddate, basetemp, building_ID)
 #plotElectricityCDD (startdate, enddate, basetemp, building_ID)
 
 # plotHDDCDD(startdate, enddate, basetemp,building_ID)
-# plotHDDCDDIntercept(startdate, enddate)
+# CalculateBaseTemp(startdate, enddate)
 
 odbcCloseAll()
