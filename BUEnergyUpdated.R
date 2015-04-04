@@ -241,12 +241,12 @@ plotElectricityCDD <- function(startdate, enddate, basetemp,building_ID) {
   datelist<-seq(as.Date(startdate), as.Date(enddate), "1 day") 
   Eleclist<- listElectricity(startdate, enddate, building_ID)
   df<-data.frame(CDD=CDDlist,Elec=Eleclist,time=datelist)
- # plot<-ggplot(data=df, aes(x=CDD, y=Elec,colour=as.integer(time)))+geom_point()+scale_colour_gradient(limits=as.integer(as.Date(c(startdate,enddate))),
+  # plot<-ggplot(data=df, aes(x=CDD, y=Elec,colour=as.integer(time)))+geom_point()+scale_colour_gradient(limits=as.integer(as.Date(c(startdate,enddate))),
   #                                                                                                                low="white", high="blue") +geom_smooth(aes(x=CDD, y=Elec),data=df,method="lm")
   plot<-ggplot(df,aes(x=CDD,y=Elec,colour=as.integer(time))) + geom_point(alpha = 0.6) +
     scale_colour_gradientn(colours=c('red','green','blue'),labels=time)
   return(plot)
-
+  
   #plot(df) 
   #fit<-lm(Elec~CDD,data=df)
   #abline(fit)
@@ -274,6 +274,36 @@ plotElectricityHDD <- function(startdate, enddate, basetemp, building_ID) {
   #fit<-lm(Elec~CDD,data=df)
   #abline(fit)
   #print(summary(fit))
+}
+
+#not working
+plotHDDCDD <- function(startdate, enddate, basetemp, building_ID) {
+  HDDlist<-listHDD(startdate, enddate, basetemp)
+  CDDlist<-listCDD(startdate, enddate, basetemp)
+  class<-listClassDay(startdate, enddate)
+  datelist<-seq(as.Date(startdate), as.Date(enddate), "1 day") 
+  Eleclist<- listElectricity(startdate, enddate, building_ID)
+  ts.H<-ts(HDDlist)
+  ts.C<-ts(CDDlist)
+  ts.E<-ts(Eleclist)
+  par(mfrow=c(1,1))
+  #plot(ts.H,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+  #plot(ts.C,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+  #plot(ts.E,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+  df <- data.frame(time = datelist, CDD = CDDlist, HDD=HDDlist,Elec=Eleclist,class=as.factor(class))
+  plot<-ggplot() + geom_point(data=df, aes(x=time, y=Elec,colour=CDD),size=2.5)+facet_grid(. ~ class)+ggtitle(paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+  plot2<-ggplot() + geom_point(data=df, aes(x=time, y=Elec,colour=HDD),size=2.5)+facet_grid(. ~ class)+ggtitle(paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+  library(gridExtra) 
+  multi<-grid.arrange(plot, plot2, ncol=1)
+  
+  CDDElec<-subset(df,CDD>0)
+  #plot(CDDElec$CDD,CDDElec$Elec,main=paste('basetemp ',basetemp,'building ',building_ID,startdate,enddate))
+  fit<-lm(CDDElec$Elec~CDDElec$CDD)
+  #abline(fit)
+  print(summary(fit))
+  sub<-subset(df,CDD==0)
+  print(mean(sub$Elec,na.rm=T))
+  return(multi)
 }
 
 CalculateBaseTemp <- function(startdate, enddate) {
@@ -422,10 +452,10 @@ for (i in 1:15) {
   cat(paste(intToBuilding(i),  "\n"))
 }
 
-# plotElectricityHDD (startdate, enddate, basetemp, building_ID)
+#plotElectricityHDD (startdate, enddate, basetemp, building_ID)
 #plotElectricityCDD (startdate, enddate, basetemp, building_ID)
 
-# plotHDDCDD(startdate, enddate, basetemp,building_ID)
+plotHDDCDD(startdate, enddate, basetemp,building_ID)
 # CalculateBaseTemp(startdate, enddate)
 
 odbcCloseAll()
